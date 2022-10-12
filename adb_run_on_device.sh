@@ -2,7 +2,7 @@
 set -e
 
 DEVICE_PATH=/data/local/tmp/opengl-es-test
-EXE=01_render_to_image
+EXE=02_render_to_image_pbo
 
 adb shell mkdir -p ${DEVICE_PATH}
 adb push build/bin/${EXE} ${DEVICE_PATH}

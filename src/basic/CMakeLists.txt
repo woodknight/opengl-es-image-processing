@@ -1,2 +1,5 @@
 add_executable(01_render_to_image 01_render_to_image.cpp)
 target_link_libraries(01_render_to_image PRIVATE lodepng egl_wrapper timer GLESv3)
+
+add_executable(02_render_to_image_pbo 02_render_to_image_pbo.cpp)
+target_link_libraries(02_render_to_image_pbo PRIVATE lodepng egl_wrapper timer GLESv3)
