@@ -9,7 +9,8 @@ adb push build/bin/${EXE} ${DEVICE_PATH}
 adb shell chmod +x ${DEVICE_PATH}/${EXE}
 adb shell "
 cd ${DEVICE_PATH}
-./${EXE} images/toucan_512x512.png
+./${EXE} images/toucan_1280x960.png
 exit
 "
 adb pull ${DEVICE_PATH}/results/img_out.png tmp/
+eog tmp/img_out.png

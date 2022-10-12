@@ -103,7 +103,10 @@ int main(int argc, char *argv[])
     std::vector<uint8_t> img;
     unsigned int width, height;
     auto error = lodepng::decode(img, width, height, argv[1], LCT_RGB);
-    if(error) std::cout << "decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+    if(error) {
+        std::cerr << "decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+        std::exit(1);
+    }
     printf("image width: %d, height: %d\n", width, height);
 
     //========== upload image to input texture
