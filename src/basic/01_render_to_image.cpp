@@ -5,6 +5,7 @@
 #include "../utils/egl_wrapper.h"
 #include "../utils/lodepng.h"
 #include "../utils/log.h"
+#include "../utils/timer.h"
 
 #include <vector>
 #include <iostream>
@@ -34,6 +35,8 @@ void main()\n\
 
 int main(int argc, char *argv[])
 {
+    Timer timer;
+
     //========== EGL init
     EglWrapper egl_wrapper;
 
@@ -139,15 +142,19 @@ int main(int argc, char *argv[])
     glViewport(0, 0, width, height);
 
     //========== render
+    timer.reset();
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    printf("render time: %fms\n", timer.elapsedUs() / 1000);
 
     //========== read output image
+    timer.reset();
     std::vector<uint8_t> img_out(width * height * 3);
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid *)img_out.data());
+    printf("glReadPixels time: %fms\n", timer.elapsedUs() / 1000);
 
     error = lodepng::encode("results/img_out.png", img_out, width, height, LCT_RGB);
     if(error) std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
