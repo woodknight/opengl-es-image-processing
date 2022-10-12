@@ -151,8 +151,8 @@ int main(int argc, char *argv[])
     printf("render time: %fms\n", timer.elapsedUs() / 1000);
 
     //========== read output image
-    timer.reset();
     std::vector<uint8_t> img_out(width * height * 3);
+    timer.reset();
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid *)img_out.data());
     printf("glReadPixels time: %fms\n", timer.elapsedUs() / 1000);
 
