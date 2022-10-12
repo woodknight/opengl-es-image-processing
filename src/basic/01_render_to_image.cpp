@@ -29,13 +29,14 @@ out vec3 fragcolor;\n\
 uniform sampler2D tex;\n\
 void main()\n\
 {\n\
-    fragcolor = texture(tex, texcoord).rgb / 2.0;\n\
+    fragcolor = 1.0 - texture(tex, texcoord).rgb;\n\
 }\n\
 ";
 
 int main(int argc, char *argv[])
 {
     Timer timer;
+    Timer timer_total;
 
     //========== EGL init
     EglWrapper egl_wrapper;
@@ -112,7 +113,10 @@ int main(int argc, char *argv[])
     }
     printf("image width: %d, height: %d\n", width, height);
 
+    std::vector<uint8_t> img_out(width * height * 3);
+
     //========== upload image to input texture
+    timer_total.reset();
     GLuint texture_in;
     glGenTextures(1, &texture_in);
     glActiveTexture(GL_TEXTURE0);
@@ -121,7 +125,9 @@ int main(int argc, char *argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    timer.reset();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img.data());
+    printf("glTexImage2D input time: %fms\n", timer.elapsedUs() / 1000);
 
     //========== output texture
     GLuint texture_out;
@@ -132,7 +138,9 @@ int main(int argc, char *argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    timer.reset();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    printf("glTexImage2D output time: %fms\n", timer.elapsedUs() / 1000);
 
     //========== output framebuffer
     GLuint framebuffer;
@@ -151,10 +159,11 @@ int main(int argc, char *argv[])
     printf("render time: %fms\n", timer.elapsedUs() / 1000);
 
     //========== read output image
-    std::vector<uint8_t> img_out(width * height * 3);
     timer.reset();
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid *)img_out.data());
     printf("glReadPixels time: %fms\n", timer.elapsedUs() / 1000);
+
+    printf("total time: %fms\n", timer_total.elapsedUs() / 1000);
 
     error = lodepng::encode("results/img_out.png", img_out, width, height, LCT_RGB);
     if(error) std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
