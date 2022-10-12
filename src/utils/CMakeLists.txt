@@ -1,0 +1,5 @@
+add_library(timer timer.cpp)
+add_library(file_io file_io.cpp)
+add_library(lodepng lodepng.cpp)
+add_library(egl_wrapper egl_wrapper.cpp)
+target_link_libraries(egl_wrapper PRIVATE EGL log)
