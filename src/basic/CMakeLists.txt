@@ -3,3 +3,6 @@ target_link_libraries(01_render_to_image PRIVATE lodepng egl_wrapper timer GLESv
 
 add_executable(02_render_to_image_pbo 02_render_to_image_pbo.cpp)
 target_link_libraries(02_render_to_image_pbo PRIVATE lodepng egl_wrapper timer GLESv3)
+
+add_executable(03_memcpy_benchmark 03_memcpy_benchmark.cpp)
+target_link_libraries(03_memcpy_benchmark PRIVATE timer)
