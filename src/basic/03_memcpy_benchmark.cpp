@@ -13,12 +13,18 @@ int main()
         src[i] = rand() % 256;
 
     Timer timer;
-    for(int i = 0; i < 10; i++)
+    int N = 10;
+    float avg_time = 0;
+    for(int i = 0; i < N; i++)
     {
         timer.reset();
         std::memcpy(dst.data(), src.data(), size);
         printf("time elapsed: %fms\n", timer.elapsedUs() / 1000);
+        avg_time += timer.elapsedUs() / 1000;
     }
+    avg_time /= N;
+
+    printf("time per MB: %fms\n", avg_time / size * 1e6);
 
     return 0;
 }
