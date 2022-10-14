@@ -1,0 +1,5 @@
+{
+    "C_Cpp.default.defines": [
+        "__ANDROID_API__=30"
+    ]
+}

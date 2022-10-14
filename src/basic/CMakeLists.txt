@@ -6,3 +6,6 @@ target_link_libraries(02_render_to_image_pbo PRIVATE lodepng egl_wrapper timer G
 
 add_executable(03_memcpy_benchmark 03_memcpy_benchmark.cpp)
 target_link_libraries(03_memcpy_benchmark PRIVATE timer)
+
+add_executable(04_ahardwarebuffer 04_ahardwarebuffer.cpp)
+target_link_libraries(04_ahardwarebuffer PRIVATE android lodepng egl_wrapper timer GLESv3)
