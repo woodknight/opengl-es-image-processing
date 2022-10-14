@@ -41,6 +41,8 @@ int main(int argc, char *argv[])
     //========== EGL init
     EglWrapper egl_wrapper;
 
+    LOGI("glGetError %d at line %d", glGetError(), __LINE__);
+
     //========== shader program
     GLuint vert_shader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vert_shader, 1, &vert_src, NULL);
@@ -103,6 +105,8 @@ int main(int argc, char *argv[])
     glVertexAttribPointer(glGetAttribLocation(program, "in_texcoord"), 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
+    LOGI("glGetError %d at line %d", glGetError(), __LINE__);
+
     //========== read image data
     std::vector<uint8_t> img;
     unsigned int width, height;
@@ -128,6 +132,7 @@ int main(int argc, char *argv[])
     timer.reset();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img.data());
     printf("glTexImage2D input time: %fms\n", timer.elapsedUs() / 1000);
+    LOGI("glGetError %d at line %d", glGetError(), __LINE__);
 
     //========== output texture
     GLuint texture_out;
@@ -141,6 +146,7 @@ int main(int argc, char *argv[])
     timer.reset();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     printf("glTexImage2D output time: %fms\n", timer.elapsedUs() / 1000);
+    LOGI("glGetError %d at line %d", glGetError(), __LINE__);
 
     //========== output framebuffer
     GLuint framebuffer;
@@ -148,6 +154,13 @@ int main(int argc, char *argv[])
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_out, 0);
     glViewport(0, 0, width, height);
+
+    if(glCheckFramebufferStatus(framebuffer) == GL_FRAMEBUFFER_COMPLETE) {
+        LOGI("glCheckFramebufferStatus success.");
+    } else {
+        LOGE("glCheckFramebufferStatus error. %d", glCheckFramebufferStatus(framebuffer));
+    }
+    LOGI("glGetError %d at line %d", glGetError(), __LINE__);
 
     //========== render
     timer.reset();
