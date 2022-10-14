@@ -1,6 +1,11 @@
-#include "../gl_header/GLES2/gl2.h"
-#include "../gl_header/GLES2/gl2ext.h"
+#define GL_GLEXT_PROTOTYPES
 #include "../gl_header/GLES3/gl3.h"
+#include "../gl_header/GLES2/gl2ext.h"
+
+#define EGL_EGLEXT_PROTOTYPES
+#include "../gl_header/EGL/egl.h"
+#include "../gl_header/EGL/eglext.h"
+// #include "../gl_header/EGL/eglplatform.h"
 
 #include "../utils/egl_wrapper.h"
 #include "../utils/lodepng.h"
@@ -8,7 +13,6 @@
 #include "../utils/timer.h"
 
 #include <android/hardware_buffer.h>
-
 #include <vector>
 #include <iostream>
 
@@ -137,8 +141,9 @@ int main(int argc, char *argv[])
     desc.width = width;
     desc.height = height;
     desc.layers = 1;
-    desc.usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN | AHARDWAREBUFFER_USAGE_CPU_WRITE_NEVER
-            | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER ;
+    desc.usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
+                 AHARDWAREBUFFER_USAGE_CPU_WRITE_NEVER |
+                 AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER;
     AHardwareBuffer *hwbuffer;
     timer.reset();
     error = AHardwareBuffer_allocate(&desc, &hwbuffer);
@@ -149,9 +154,13 @@ int main(int argc, char *argv[])
         LOGI("AHardwareBuffer_allocate success");
     }
 
-    //Create EGLClientBuffer from the AHardwareBuffer.
-    // EGLClientBuffer native_buffer = eglGetNativeClientBufferANDROID(hwbuffer);
+    // Create EGLClientBuffer from the AHardwareBuffer.
+    EGLClientBuffer native_buffer = eglGetNativeClientBufferANDROID(hwbuffer);
 
+    // Create EGLImage from EGLClientBuffer
+    EGLint attrs[] = {EGL_NONE};
+    EGLImageKHR image = eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT,
+        EGL_NATIVE_BUFFER_ANDROID, native_buffer, attrs);
 
     //========== output texture
     GLuint texture_out;
@@ -163,7 +172,8 @@ int main(int argc, char *argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     timer.reset();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, image);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     printf("glTexImage2D output time: %fms\n", timer.elapsedUs() / 1000);
 
     //========== output framebuffer

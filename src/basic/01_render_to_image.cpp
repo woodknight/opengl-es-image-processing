@@ -1,6 +1,6 @@
-#include "../gl_header/GLES2/gl2.h"
-#include "../gl_header/GLES2/gl2ext.h"
 #include "../gl_header/GLES3/gl3.h"
+#include "../gl_header/GLES2/gl2ext.h"
+
 
 #include "../utils/egl_wrapper.h"
 #include "../utils/lodepng.h"
