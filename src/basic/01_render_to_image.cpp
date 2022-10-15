@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     timer.reset();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img.data());
     printf("glTexImage2D input time: %fms\n", timer.elapsedUs() / 1000);
     LOGI("glGetError %d at line %d", glGetError(), __LINE__);
 
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     timer.reset();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     printf("glTexImage2D output time: %fms\n", timer.elapsedUs() / 1000);
     LOGI("glGetError %d at line %d", glGetError(), __LINE__);
 
@@ -155,10 +155,10 @@ int main(int argc, char *argv[])
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_out, 0);
     glViewport(0, 0, width, height);
 
-    if(glCheckFramebufferStatus(framebuffer) == GL_FRAMEBUFFER_COMPLETE) {
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
         LOGI("glCheckFramebufferStatus success.");
     } else {
-        LOGE("glCheckFramebufferStatus error. %d", glCheckFramebufferStatus(framebuffer));
+        LOGE("glCheckFramebufferStatus error. %d", glCheckFramebufferStatus(GL_FRAMEBUFFER));
     }
     LOGI("glGetError %d at line %d", glGetError(), __LINE__);
 
