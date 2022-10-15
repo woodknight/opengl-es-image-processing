@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+# set -e
 
 DEVICE_PATH=/data/local/tmp/opengl-es-test/
 
@@ -9,6 +9,7 @@ DEVICE_PATH=/data/local/tmp/opengl-es-test/
 EXE=04_ahardwarebuffer
 
 adb shell mkdir -p ${DEVICE_PATH}
+adb shell rm ${DEVICE_PATH}/results/img_out.png
 adb push build/bin/${EXE} ${DEVICE_PATH}
 adb shell chmod +x ${DEVICE_PATH}/${EXE}
 adb shell "

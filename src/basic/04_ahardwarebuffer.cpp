@@ -35,7 +35,7 @@ out vec3 fragcolor;\n\
 uniform sampler2D tex;\n\
 void main()\n\
 {\n\
-    fragcolor = texture(tex, texcoord).rgb / 2.0;\n\
+    fragcolor = 1.0 - texture(tex, texcoord).rgb;\n\
 }\n\
 ";
 
@@ -149,7 +149,8 @@ int main(int argc, char *argv[])
     error = AHardwareBuffer_allocate(&desc, &hwbuffer);
     printf("AHardwareBuffer_allocate time: %f ms\n", timer.elapsedUs() / 1000);
     if(error == 1) {
-        std::cerr << "AHardwareBuffer_allocate failed" << std::endl;
+        LOGE("AHardwareBuffer_allocate failed");
+        std::exit(1);
     } else {
         LOGI("AHardwareBuffer_allocate success");
     }
@@ -158,9 +159,9 @@ int main(int argc, char *argv[])
     EGLClientBuffer native_buffer = eglGetNativeClientBufferANDROID(hwbuffer);
 
     // Create EGLImage from EGLClientBuffer
-    EGLint attrs[] = {EGL_NONE};
-    EGLImageKHR image = eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT,
-        EGL_NATIVE_BUFFER_ANDROID, native_buffer, attrs);
+    EGLint egl_attrs[] = {EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE};
+    EGLImageKHR egl_img = eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT,
+        EGL_NATIVE_BUFFER_ANDROID, native_buffer, egl_attrs);
 
     //========== output texture
     GLuint texture_out;
@@ -171,17 +172,24 @@ int main(int argc, char *argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    timer.reset();
-    glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, image);
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    printf("glTexImage2D output time: %fms\n", timer.elapsedUs() / 1000);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    // glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, egl_img);
 
     //========== output framebuffer
     GLuint framebuffer;
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_out, 0);
+    // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_EXTERNAL_OES, texture_out, 0);
     glViewport(0, 0, width, height);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+        LOGI("glCheckFramebufferStatus success.");
+    } else {
+        LOGE("glCheckFramebufferStatus error. %d", glCheckFramebufferStatus(GL_FRAMEBUFFER));
+        // std::exit(1);
+    }
+    LOGI("glGetError %d.", glGetError());
 
     //========== render
     timer.reset();
@@ -193,6 +201,22 @@ int main(int argc, char *argv[])
     printf("render time: %fms\n", timer.elapsedUs() / 1000);
 
     //========== read output image
+    // timer.reset();
+    // void *buffer_reader;
+    // error = AHardwareBuffer_lock(hwbuffer, AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN, -1, nullptr, (void **)&buffer_reader);
+    // if(error == 0) {
+    //     LOGI("AHardwareBuffer_lock success.");
+    // } else {
+    //     LOGE("AHardwareBuffer_lock failed.");
+    // }
+    // printf("AHardwareBuffer_lock time: %fms\n", timer.elapsedUs() / 1000);
+
+    // timer.reset();
+    // memcpy(img_out.data(), buffer_reader, width * height * 3);
+    // printf("memcpy time: %fms\n", timer.elapsedUs() / 1000);
+
+    // AHardwareBuffer_unlock(hwbuffer, nullptr);
+
     timer.reset();
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid *)img_out.data());
     printf("glReadPixels time: %fms\n", timer.elapsedUs() / 1000);
@@ -201,6 +225,8 @@ int main(int argc, char *argv[])
 
     error = lodepng::encode("results/img_out.png", img_out, width, height, LCT_RGB);
     if(error) std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
+
+    // eglDestroyImageKHR;
 
     return 0;
 }

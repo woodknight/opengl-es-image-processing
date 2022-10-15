@@ -9,6 +9,9 @@ public:
     EglWrapper();
     ~EglWrapper();
 
+    EGLDisplay get_display() { return display_; }
+    EGLContext get_context() { return context_; }
+    EGLSurface get_surface() { return surface_; }
 private:
     void create_context();
     void release_context();
