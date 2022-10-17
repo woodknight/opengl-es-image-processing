@@ -4,7 +4,7 @@
 #define LOG_PREFIX "OPENGL-IMAGE-PROCESS. "
 
 // #ifdef __ANDROID__
-#ifndef NDEBUG
+#ifdef NDEBUG
     #include <android/log.h>
     #define LOGI(...) \
         ((void)__android_log_print(ANDROID_LOG_INFO, "native-lib::", LOG_PREFIX __VA_ARGS__))
