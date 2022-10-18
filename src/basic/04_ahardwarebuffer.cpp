@@ -45,6 +45,8 @@ int main(int argc, char *argv[])
     Timer timer;
     Timer timer_total;
 
+    GLsync sync;
+
     //========== EGL init
     EglWrapper egl_wrapper;
 
@@ -104,6 +106,7 @@ int main(int argc, char *argv[])
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // positions attribute
+    printf("glGetAttribLocation: %d\n", glGetAttribLocation(program, "in_position"));
     glVertexAttribPointer(glGetAttribLocation(program, "in_position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
@@ -130,13 +133,18 @@ int main(int argc, char *argv[])
     glGenTextures(1, &texture_in);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_in);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB8, width, height);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFinish();
     timer.reset();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img.data());
-    printf("glTexImage2D input time: %fms\n", timer.elapsedUs() / 1000);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img.data());
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, img.data());
+    glFinish();
+    printf("glTexSubImage2D input time: %fms\n", timer.elapsedUs() / 1000);
+
 
     //========== create AHardwareBuffer and EGLImage
     AHardwareBuffer_Desc desc{};
@@ -207,7 +215,9 @@ int main(int argc, char *argv[])
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glFinish();
+    // glFinish();
+    sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, 1e9);
     printf("render time: %fms\n", timer.elapsedUs() / 1000);
 
     //========== read output image
@@ -234,7 +244,9 @@ int main(int argc, char *argv[])
     error = lodepng::encode("results/img_out.png", img_out, width, height, LCT_RGB);
     if(error) std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
 
-    // eglDestroyImageKHR;
+    glDeleteSync(sync);
+    eglDestroyImageKHR(eglGetCurrentDisplay(), egl_img);
+    AHardwareBuffer_release(hwbuffer);
 
     return 0;
 }
