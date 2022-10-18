@@ -15,27 +15,30 @@
 #include <android/hardware_buffer.h>
 #include <vector>
 #include <iostream>
+#include <cstring>
 
-const char *vert_src = "\
-#version 300 es\n\
-layout (location = 0) in vec3 in_position;\n\
-layout (location = 1) in vec2 in_texcoord;\n\
-out vec2 texcoord;\n\
-void main()\n\
-{\n\
-    texcoord = in_texcoord;\n\
-    gl_Position = vec4(in_position, 1.0);\n\
-}\n\
-";
+std::string vert_src = R"(
+#version 300 es
+layout (location = 0) in vec3 in_position;
+layout (location = 1) in vec2 in_texcoord;
+out vec2 texcoord;
+void main()
+{
+    texcoord = in_texcoord;
+    gl_Position = vec4(in_position, 1.0);
+}
+)";
 
 const char *frag_src = "\
 #version 300 es\n\
+#extension GL_OES_EGL_image_external_essl3 : require\n\
+#extension GL_OES_EGL_image_external : require\n\
 in vec2 texcoord;\n\
-out vec3 fragcolor;\n\
+out vec4 fragcolor;\n\
 uniform sampler2D tex;\n\
 void main()\n\
 {\n\
-    fragcolor = 1.0 - texture(tex, texcoord).rgb;\n\
+    fragcolor = vec4(1.0 - texture(tex, texcoord).rgb, 1.0);\n\
 }\n\
 ";
 
@@ -49,7 +52,8 @@ int main(int argc, char *argv[])
 
     //========== shader program
     GLuint vert_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vert_shader, 1, &vert_src, NULL);
+    const char *vert_src_str = vert_src.c_str();
+    glShaderSource(vert_shader, 1, &vert_src_str, NULL);
     glCompileShader(vert_shader);
 
     int success;
@@ -119,7 +123,7 @@ int main(int argc, char *argv[])
     }
     printf("image width: %d, height: %d\n", width, height);
 
-    std::vector<uint8_t> img_out(width * height * 3);
+    std::vector<uint8_t> img_out(width * height * 4);
 
     //========== upload image to input texture
     timer_total.reset();
@@ -137,13 +141,17 @@ int main(int argc, char *argv[])
 
     //========== create AHardwareBuffer and EGLImage
     AHardwareBuffer_Desc desc{};
-    desc.format = AHARDWAREBUFFER_FORMAT_R8G8B8_UNORM;
+    desc.format = AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM;
     desc.width = width;
     desc.height = height;
     desc.layers = 1;
+    desc.stride = 10;
+    desc.rfu0 = 0;
+    desc.rfu1 = 0;
     desc.usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
                  AHARDWAREBUFFER_USAGE_CPU_WRITE_NEVER |
-                 AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER;
+                //  AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE |
+                 AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT;
     AHardwareBuffer *hwbuffer;
     timer.reset();
     error = AHardwareBuffer_allocate(&desc, &hwbuffer);
@@ -155,25 +163,38 @@ int main(int argc, char *argv[])
         LOGI("AHardwareBuffer_allocate success");
     }
 
+    AHardwareBuffer_Desc desc1;
+    AHardwareBuffer_describe(hwbuffer, &desc1);
+    printf("AHardwareBuffer stride: %d\n", desc1.stride);
+
     // Create EGLClientBuffer from the AHardwareBuffer.
     EGLClientBuffer native_buffer = eglGetNativeClientBufferANDROID(hwbuffer);
 
     // Create EGLImage from EGLClientBuffer
-    EGLint egl_attrs[] = {EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE};
+    EGLint egl_img_attrs[] = {EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE};
+    // EGLint egl_img_attrs[] = {EGL_WIDTH, EGLint(width), EGL_HEIGHT, EGLint(height),
+        // EGL_MATCH_FORMAT_KHR, EGL_FORMAT_RGBA_8888_KHR, EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE};
+
     EGLImageKHR egl_img = eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT,
-        EGL_NATIVE_BUFFER_ANDROID, native_buffer, egl_attrs);
+        EGL_NATIVE_BUFFER_ANDROID, native_buffer, egl_img_attrs);
+    if(egl_img == EGL_NO_IMAGE) {
+        LOGE("eglCreateImageKHR failed.");
+    } else {
+        LOGI("eglCreateImageKHR success.");
+    }
 
     //========== output texture
     GLuint texture_out;
     glGenTextures(1, &texture_out);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture_out);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    // glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, egl_img);
+    // glBindTexture(GL_TEXTURE_EXTERNAL_OES, texture_out);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, egl_img);
 
     //========== output framebuffer
     GLuint framebuffer;
@@ -191,6 +212,7 @@ int main(int argc, char *argv[])
     }
     LOGI("glGetError %d.", glGetError());
 
+    glFinish();
     //========== render
     timer.reset();
     glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -198,32 +220,31 @@ int main(int argc, char *argv[])
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glFinish();
     printf("render time: %fms\n", timer.elapsedUs() / 1000);
 
     //========== read output image
-    // timer.reset();
-    // void *buffer_reader;
-    // error = AHardwareBuffer_lock(hwbuffer, AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN, -1, nullptr, (void **)&buffer_reader);
-    // if(error == 0) {
-    //     LOGI("AHardwareBuffer_lock success.");
-    // } else {
-    //     LOGE("AHardwareBuffer_lock failed.");
-    // }
-    // printf("AHardwareBuffer_lock time: %fms\n", timer.elapsedUs() / 1000);
-
-    // timer.reset();
-    // memcpy(img_out.data(), buffer_reader, width * height * 3);
-    // printf("memcpy time: %fms\n", timer.elapsedUs() / 1000);
-
-    // AHardwareBuffer_unlock(hwbuffer, nullptr);
-
     timer.reset();
-    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid *)img_out.data());
-    printf("glReadPixels time: %fms\n", timer.elapsedUs() / 1000);
+    void *buffer_reader;
+    error = AHardwareBuffer_lock(hwbuffer, AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN, -1, nullptr, (void **)&buffer_reader);
+    if(error == 0) {
+        LOGI("AHardwareBuffer_lock success.");
+    } else {
+        LOGE("AHardwareBuffer_lock failed.");
+    }
 
+    memcpy(img_out.data(), buffer_reader, width * height * 4);
+    AHardwareBuffer_unlock(hwbuffer, nullptr);
+    printf("memcpy time: %fms\n", timer.elapsedUs() / 1000);
+
+    // timer.reset();
+    // glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid *)img_out.data());
+    // printf("glReadPixels time: %fms\n", timer.elapsedUs() / 1000);
+
+    //==========
     printf("total time: %fms\n", timer_total.elapsedUs() / 1000);
 
-    error = lodepng::encode("results/img_out.png", img_out, width, height, LCT_RGB);
+    error = lodepng::encode("results/img_out.png", img_out, width, height, LCT_RGBA);
     if(error) std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
 
     // eglDestroyImageKHR;
