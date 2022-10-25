@@ -6,7 +6,8 @@ DEVICE_PATH=/data/local/tmp/opengl-es-test/
 # EXE=01_render_to_image
 # EXE=02_render_to_image_pbo
 # EXE=03_memcpy_benchmark
-EXE=04_ahardwarebuffer
+# EXE=04_ahardwarebuffer
+EXE=05_ahardwarebuffer_input
 
 adb shell mkdir -p ${DEVICE_PATH}
 adb shell rm ${DEVICE_PATH}/results/img_out.png

@@ -1,5 +1,8 @@
 {
     "C_Cpp.default.defines": [
         "__ANDROID_API__=30"
-    ]
+    ],
+    "files.associations": {
+        "core": "cpp"
+    }
 }
