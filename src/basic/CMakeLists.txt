@@ -12,3 +12,6 @@ target_link_libraries(04_ahardwarebuffer PRIVATE android lodepng egl_wrapper tim
 
 add_executable(05_ahardwarebuffer_input 05_ahardwarebuffer_input.cpp)
 target_link_libraries(05_ahardwarebuffer_input PRIVATE android lodepng egl_wrapper timer GLESv3)
+
+add_executable(06_ahardwarebuffer_optimized 06_ahardwarebuffer_optimized.cpp)
+target_link_libraries(06_ahardwarebuffer_optimized PRIVATE android lodepng egl_wrapper timer GLESv3)
