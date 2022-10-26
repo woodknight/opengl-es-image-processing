@@ -3,6 +3,9 @@
 
 DEVICE_PATH=/data/local/tmp/opengl-es-test/
 
+adb shell mkdir -p ${DEVICE_PATH}/results
+adb push images ${DEVICE_PATH}
+
 # EXE=01_render_to_image
 # EXE=02_render_to_image_pbo
 # EXE=03_memcpy_benchmark
@@ -10,7 +13,6 @@ DEVICE_PATH=/data/local/tmp/opengl-es-test/
 # EXE=05_ahardwarebuffer_input
 EXE=06_ahardwarebuffer_optimized
 
-adb shell mkdir -p ${DEVICE_PATH}
 adb shell rm ${DEVICE_PATH}/results/img_out.png
 adb push build/bin/${EXE} ${DEVICE_PATH}
 adb shell chmod +x ${DEVICE_PATH}/${EXE}
